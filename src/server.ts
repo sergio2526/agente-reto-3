@@ -8,7 +8,7 @@ import { extname } from "node:path"
 import { CicloAgente } from "./agent/ciclo.ts"
 import { AlmacenSesiones, idSesionValido } from "./agent/sesiones.ts"
 import { config } from "./config.ts"
-import { RUTA_SOLICITUDES, existe, rutaSegura } from "./lib/archivos.ts"
+import { RUTA_SOLICITUDES, escribir, existe, rutaOut, rutaSegura } from "./lib/archivos.ts"
 import type { ProveedorLLM } from "./llm/adapter.ts"
 import { crearProveedor } from "./llm/index.ts"
 import { ProveedorSimulado } from "./llm/simulado.ts"
@@ -24,7 +24,21 @@ const iniciarProveedor = (): { proveedor: ProveedorLLM; aviso: string | null } =
   }
 }
 
-const { proveedor, aviso } = iniciarProveedor()
+/** Falla temprano y claro si out/ no es escribible (p. ej. contenedor sin permisos). */
+const verificarEscritura = async (): Promise<string | null> => {
+  try {
+    await escribir(rutaOut(config.directorio, ".escritura"), new Date().toISOString())
+    return null
+  } catch (e) {
+    const aviso = `No se puede escribir en out/ (${(e as Error).message}). El chat no podrá guardar sesiones ni crear OC: revisa los permisos de la carpeta del proyecto.`
+    console.error(aviso)
+    return aviso
+  }
+}
+
+const { proveedor, aviso: avisoProveedor } = iniciarProveedor()
+const avisoEscritura = await verificarEscritura()
+const aviso = [avisoProveedor, avisoEscritura].filter(Boolean).join(" ") || null
 const sistema = await readFile(rutaSegura(config.directorio, "agent/prompt.md"), "utf8")
 const sesiones = new AlmacenSesiones(config.directorio)
 const ciclo = new CicloAgente({
@@ -119,8 +133,10 @@ const servidor = Bun.serve({
       if (ruta.startsWith("/api/")) return json({ ok: false, error: "Ruta no encontrada" }, 404)
       return await archivo(rutaSegura(rutaSegura(config.directorio, "web"), ruta === "/" ? "index.html" : ruta.slice(1)))
     } catch (e) {
-      console.error(`[${req.method} ${ruta}]`, (e as Error).message)
-      return json({ ok: false, error: "Error interno del servidor" }, 500)
+      const mensaje = (e as Error).message
+      console.error(`[${req.method} ${ruta}]`, mensaje)
+      const permiso = /EACCES|EROFS|EPERM/.test(mensaje)
+      return json({ ok: false, error: permiso ? "El servidor no tiene permiso para escribir en out/. Revisa la configuración del despliegue." : "Error interno del servidor" }, 500)
     }
   },
 })

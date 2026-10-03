@@ -6,6 +6,8 @@ COPY agent ./agent
 COPY src ./src
 COPY web ./web
 COPY fixtures ./fixtures
+# El proceso corre como el usuario "bun" (sin privilegios): necesita poder escribir en out/.
+RUN mkdir -p /app/out && chown -R bun:bun /app/out
 ENV NODE_ENV=production PORT=3006
 EXPOSE 3006
 USER bun
