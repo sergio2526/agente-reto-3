@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agente OC SAP</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="barra">
+    <div class="marca">
+      <span class="logo" aria-hidden="true">OC</span>
+      <div>
+        <h1>Agente de órdenes de compra</h1>
+        <p class="sub">Lee el paquete, valida contra maestros y crea la OC en SAP (simulado)</p>
+      </div>
+    </div>
+    <div class="estado">
+      <span id="salud" class="insignia">conectando…</span>
+      <button id="nueva" class="secundario" type="button">Nueva sesión</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <h2>Casos</h2>
+      <div id="casos" class="casos"></div>
+      <h2>Prueba sugerida</h2>
+      <button class="ejemplo" type="button" data-texto='Procesa la solicitud "sol-004". Muéstrame la OC como quedaría en SAP, qué validaciones pasó y cuáles no, y no la crees hasta que yo lo confirme.'>sol-004 con revisión previa</button>
+      <h2>Archivos de control</h2>
+      <ul class="enlaces">
+        <li><a href="/api/archivo?ruta=out/control.csv" target="_blank" rel="noopener">out/control.csv</a></li>
+        <li><a href="/api/archivo?ruta=out/sap/ordenes.jsonl" target="_blank" rel="noopener">out/sap/ordenes.jsonl</a></li>
+      </ul>
+      <p class="nota">Sesión: <code id="sesion"></code></p>
+    </aside>
+
+    <section class="chat" aria-live="polite">
+      <div id="mensajes" class="mensajes">
+        <div class="bienvenida">
+          <p>Hola. Pídeme procesar una solicitud, por ejemplo <em>“Procesa la solicitud sol-001”</em>. Verás cada herramienta que uso y te pediré confirmación cuando haya excepciones.</p>
+        </div>
+      </div>
+
+      <div id="confirmacion" class="confirmacion" hidden>
+        <div>
+          <strong>El agente espera tu confirmación.</strong>
+          <span>Revisa la OC y las excepciones antes de crearla.</span>
+        </div>
+        <div class="acciones">
+          <button id="confirmar" type="button">Confirmo, crear la OC</button>
+          <button id="rechazar" class="secundario" type="button">No, no la crees</button>
+        </div>
+      </div>
+
+      <form id="formulario" class="entrada">
+        <textarea id="texto" rows="2" maxlength="2000" placeholder="Escribe un mensaje… (Enter envía, Shift+Enter salto de línea)" required></textarea>
+        <button id="enviar" type="submit">Enviar</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
